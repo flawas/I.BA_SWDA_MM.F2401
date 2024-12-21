@@ -1,0 +1,71 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-technical-risks]]
+== Risiken und technische Schulden
+
+[role="arc42help"]
+****
+.Inhalt
+Eine nach Prioritäten geordnete Liste der erkannten Architekturrisiken und/oder technischen Schulden.
+
+.Motivation
+"Risikomanagement ist Projektmanagement für Erwachsene."
+-- Tim Lister, Atlantic Systems Guild
+
+Unter diesem Motto sollten Sie Architekturrisiken und/oder technische Schulden gezielt ermitteln, bewerten und Ihren Management-Stakeholdern (z.B. Projektleitung, Product-Owner) transparent machen.
+
+.Form
+Liste oder Tabelle von Risiken und/oder technischen Schulden, eventuell mit vorgeschlagenen Maßnahmen zur Risikovermeidung, Risikominimierung oder dem Abbau der technischen Schulden.
+
+
+.Weiterführende Informationen
+
+Siehe https://docs.arc42.org/section-11/[Risiken und technische Schulden] in der online-Dokumentation (auf Englisch!).
+****
+
+[cols="4,10,1"]
+|===
+| Titel | Beschreibung | Schuld |
+
+| Single-Tenant vs Multi-Tenant
+| "Single Service Instance per Host" (https://microservices.io/patterns/deployment/single-service-per-host.html), https://romanglushach.medium.com/building-for-scalability-microservice-deployment-patterns-4c9f82b04a6d vs serverless -> Services sollten Stateless sein!
+| 3h 🟠
+
+| Payment-Service auslagern
+| Payment-Service ist im Order-Service integriert. Er wurde aber bereits über Messaging angebunden, kann also ohne grosse Anpassungen herausgebrochen werden.
+| 30min 🟠
+
+| User-Service auslagern
+| User-Service ist im Order-Service integriert. Er ist stärker gekoppelt (kein Einbindung via Messaging) und es müssen Abhängigkeiten zu anderen Services geprüft werden. 
+| 2h 🔴
+
+| JavaDoc und OpenAPI Doc
+| Konsequentes dokumentieren besonders auf den sichtbaren Komponenten (DTOs, Controllers). 
+| 4h 🔴
+
+| HTTP Responses vereinheitlichen
+| Auf den Services Inventory, Warehouse & Log müssen konsequent HTTP-Response Codes in den Rückgaben angewandt werden: 201 (Created), 404 (Not found), 422 (Unprocessable Content / provided attributes are insufficient or invalid)
+| 2h 🟠
+
+| API-Gateway umstellung
+| Gegen aussen nur noch Kommunikation via dem API-Gateway (KrakenD) zulassen. Dafür alle zulässigen Ressourcen in der Konfig abbilden, und das direkte Ansprechen via Traefik unterbinden / Rückgängig machen. 
+| 2h 🟢
+
+| Konsequenzes "fachliches" Loggen
+| Logging-Service konsequent einbinden. Betrifft alle Services.
+| 2h 🟠
+
+| Implementation Identity-Service
+| Identity-Service zur Auth implementieren im angedachten Tech-Stack (JWT, Anbindung API-Gateway). 
+| 6h 🟢
+
+| Authorisation
+| Einbindung der Authorisierung / die Ressourcen auf den Services schützen.
+| 4h 🟠
+
+|===
+
+.Legende 1: Ausmass
+* 🟢 Unwesentlich
+* 🟠 Hoch
+* 🔴 Kritisch

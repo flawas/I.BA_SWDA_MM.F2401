@@ -1,0 +1,76 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-system-scope-and-context]]
+== Kontextabgrenzung
+=== Fachlicher Kontext
+
+image::Kontext-Diagramm.png["Kontext Diagramm"]
+
+=== Technischer Kontext
+
+.Folgende Umsysteme existieren, sind zu beachten und einzubinden
+* Das Zentrallager ist durch eine Legacy Java API vorgegeben und anzubinden.
+
+=== Featureliste
+
+[cols="1,10,3,3"]
+|===
+| Id | Epic | Priorität	| Status 
+
+| 1a| Die Filiale kann alle Artikel verkaufen, die im zentralen Lager vorhanden bzw. lieferbar sind. 
+| 🔴 1. Must | ✅ Done
+
+| 1b | Vorhandene Artikel können in Listen dargestellt werden.                                        
+| 🔴 1. Must | ✅ Done
+
+| 1c | Für Artikel wird  Bezeichnung, Artikel-Nummer, Preis, Anzahl (lokal) Exemplare festgehalten.   
+| 🔴 1. Must | ✅ Done
+
+| 1d | Für jede Bestellung wird Artikel, Preis, Verkäufer, Datum, Kunde festgehalten.                 
+| 🔴 1. Must | ✅ Done
+
+| 1e | Minimalmenge, muss aus dem Zentrallager automatisch nachbestellt werden.                       
+| 🔴 1. Must | ✅ Done
+
+| 1f | Hat ein Kunde ausstehende Mahnungen, erfolgt für das Verkaufspersonal eine Warnung.            
+| 🔴 1. Must | ✅ Done
+
+| 1g | Rechnung erzeugt und die Kunden erhalten eine Bestellbestätigung.                              
+| 🔴 1. Must | ✅ Done
+
+| 2 | Filialleiter kann aktuelle Bestellungen, Nachbestellungen und Lieferungen einsehen.            
+| 🟠 2. Should | ✅ Done 
+
+| 3 | Datentypist trägt angelieferte Artikel im Filiallager ein.                                     
+| 🟠 2. Should | ✅ Done
+
+| 4a | Verkaufspersonal kann Zustand der Bestellungen einsehen.                                       
+| 🟠 2. Should | ✅ Done
+
+| 4b | Eine Bestellung kann auch geändert oder annulliert werden                                      
+| 🟡 3. Could | 🎯 ToDo
+
+| 5 | Keine inkonsistenten Zustände wenn mehrere Benutzer gleichzeitig anpassungen vornehmen.        
+| 🟠 2. Should | ✅ ? 
+
+| 6a | Authentifizierung: Benutzer mit User-ID und Passwort identifizieren                            
+| 🟡 3. Could | 🎯 ToDo
+
+| 6b | Autorisierung: Rechte zugeteilt (SysAdmin, Filialleiter, Verkäufer, Datentypist).              
+| 🟡 3. Could | 🎯 ToDo
+
+| 7 | Fachlichen Vorgänge anhand von Logging überwachen.                                             
+| 🔴 1. Must | ✅ Done
+
+|===
+
+.Legende 1: MoSCoW-Priorisierung
+* 🔴 1. Must
+* 🟠 2. Should
+* 🟡 3. Could
+* 🟢 4. Won't
+
+.Legende 2: Umsetzungsstatus
+* 🎯 ToDo
+* 🛠️ In progress
+* ✅ Done

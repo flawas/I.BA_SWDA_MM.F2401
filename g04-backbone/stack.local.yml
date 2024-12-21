@@ -1,0 +1,200 @@
+networks:
+  backbone:
+  # demo:
+
+services:
+  
+  bus:
+    image: cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/swda/rabbitmq:3.9.29-management-alpine
+    restart: always
+    ports:
+      - "8082:15672"
+      - "5672:5672"
+    networks:
+      - backbone
+
+  portainer:
+    image: cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/portainer-ce:2.19.1-alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+    ports:
+      - "8083:9000"
+    networks:
+      - backbone
+  
+  mongodb:
+    image: cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/bitnami/mongodb:4.2.19
+    restart: always
+    # environment: # TODO: Cannot establish connection with credentials
+    #   MONGO_INITDB_ROOT_USERNAME: 'root'
+    #   MONGO_INITDB_ROOT_PASSWORD: 'root'
+    ports:
+      - '27017:27017'
+    networks:
+      - backbone
+
+  mongo-viewer:
+    image: cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/mongo-express:0.54
+    restart: always
+    ports:
+      - "8084:8081"
+    networks:
+      - backbone
+    links:
+      - "mongodb:mongo"
+
+  krakend:
+    image: devopsfaith/krakend:2.6.2
+    volumes:
+      - ./krakend.json:/etc/krakend/krakend.json
+    ports:
+      - "6060:6060"
+    networks:
+      - backbone
+
+
+##############################################
+# SWDA FS24                                  #
+# G04 FBS Services                           #
+##############################################
+
+  order-service:
+    image: swda-24fs/g04-order-service:latest                                                                    # Local
+    # image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-order-service:b2ea0cbf     # or Remote from container registry
+    restart: always
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-order-service'
+      - 'MICRONAUT_SERVER_PORT=8090'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+      - 'MONGODB_URI=mongodb://mongodb:27017/order-db'
+      - 'MONGODB_PACKAGE_ENTITIES=ch.hslu.swda.data.entities'
+    networks:
+      - backbone
+    links:
+      - "mongodb:mongo"
+    ports:
+      - '8094:8090'
+
+  inventory-service:
+    image: swda-24fs/g04-inventory-service:latest                                                                      # Local
+    # image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-inventory-service:b2ea0cbf     # or Remote from container registry
+    restart: always
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-inventory-service'
+      - 'MICRONAUT_SERVER_PORT=8090'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+      - 'MONGODB_URI=mongodb://mongodb:27017/inventory-db'
+      - 'MONGODB_PACKAGE_ENTITIES=ch.hslu.swda.api.entities'
+    networks:
+      - backbone
+    links:
+      - "mongodb:mongo"
+    ports:
+      - '8095:8090'
+
+  log-service:
+    image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g-04-log-service:0b855f0e                                                                      # Local
+    # image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-log-service:b2ea0cbf     # or Remote from container registry
+    restart: always
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-log-service'
+      - 'MICRONAUT_SERVER_PORT=8090'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+      - 'MONGODB_URI=mongodb://mongodb:27017/log-db'
+      - 'MONGODB_PACKAGE_ENTITIES=ch.hslu.swda.data.entities'
+    networks:
+      - backbone
+    links:
+      - "mongodb:mongo"
+    ports:
+      - '8097:8090'
+
+  warehouse-service:
+    image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-warehouse-service:1015f973                                                                  # Local
+    # image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-order-service:b2ea0cbf     # or Remote from container registry
+    restart: always
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-warehouse-service'
+      - 'MICRONAUT_SERVER_PORT=8090'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+      - 'MONGODB_URI=mongodb://mongodb:27017/warehouse-db'
+      - 'MONGODB_PACKAGE_ENTITIES=ch.hslu.swda.data.entities'
+    networks:
+      - backbone
+    links:
+      - "mongodb:mongo"
+    ports:
+      - '8096:8090'
+
+  mail-service:
+    image: cr.gitlab.switch.ch/hslu/edu/bachelor-computer-science/swda/24fs01/g04/g04-mail-service:14d534a0                                                            # Local
+    restart: always
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-warehouse-service'
+      - 'MICRONAUT_SERVER_PORT=8090'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+    networks:
+      - backbone
+    ports:
+      - '8098:8090'
+
+##############################################
+# Demo Stack                                 #
+# you can remove these services if you want  #
+##############################################
+
+  # demo-register:
+  #   image:  cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/swda/register-service:stable
+  #   command:
+  #     - '-v'
+  #     - '-s'
+  #     - '60'
+  #   restart: always
+  #   environment:
+  #     - 'BUS_URL=amqp://swda:swda@bus:5672/'
+  #     - 'BUS_EXCHANGE=swda'
+  #     - 'DB_URL=mongodb://demo-db:27017'
+  #     - 'DB_USER=root'
+  #     - 'DB_PASSWORD=root'
+  #   networks:
+  #     - backbone
+  #     - demo
+  #   ports:
+  #     - '8091:8090'
+  
+  # demo-statistics:
+  #   image:  cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/swda/statistics-service:stable
+  #   command:
+  #     - '-v'
+  #   restart: always
+  #   environment:
+  #     - 'BUS_URL=amqp://swda:swda@bus:5672/'
+  #     - 'BUS_EXCHANGE=swda'
+  #   networks:
+  #     - backbone
+  #   ports:
+  #     - '8092:8090'
+  
+  # demo-dashboard:
+  #   image:  cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/swda/dashboard-service:stable
+  #   command:
+  #     - '-v'
+  #   restart: always
+  #   environment:
+  #     - 'BUS_URL=amqp://swda:swda@bus:5672/'
+  #     - 'BUS_EXCHANGE=swda'
+  #   networks:
+  #     - backbone
+  #   ports:
+  #     - '8093:8090'

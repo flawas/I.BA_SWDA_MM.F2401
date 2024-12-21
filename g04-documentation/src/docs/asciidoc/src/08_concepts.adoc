@@ -1,0 +1,95 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-concepts]]
+== Querschnittliche Konzepte
+=== Architektur- und Entwurfsmuster
+==== Microservice Architektur
+
+Die Software wird nach dem Microservice Architekurmuster gebaut.
+
+==== CRUD mit REST-API
+
+Create Read Update und Delete (Erstellen, Lesen, Modifizieren und Löschen) sind die gängigen Operationen, welche für eine  Resource/Entität auf der API angeboten werden. 
+
+.Um diese Operationen durchzuführen, bietet REST folgende Methoden an:
+* **HTTP GET**: Read | Abfragen/Lesen, Idempotent
+* **HTTP POST**: Create | Erstellen, Unsafe
+* **HTTP PUT**: Update | Modifizieren, Idempotent-Unsafe
+* **HTTP DELETE**: Delete | Löschen/Entfernen, Idempotent-Unsafe
+
+image::HTTP-Methods-unsafe-idempotent.png["HTTP-Method Unsafe vs. Idempotent"]
+
+Idempotent bedeutet soviel, dass beim trotz mehrfachem Aufruf keine Veränderung bei der Rückgabe erfolgt, das Resultat bleibt das gleiche. Dies gilt ausschliesslich für GET. Den teilweise idempotenten-unsicheren Methoden PUT & DELETE sowie der vollständig unsicheren Methode POST muss besondere beachtung geschenkt werden, beispielsweise beim parallelem Zugriff mehrerer Benutzer. 
+
+.PUT vs. PATCH
+* PUT: Completly replaces
+* PATCH: Partially updates
+
+==== REST-API & Versionierung
+
+Die API Schnittstelle ist über den _/api_ Pfadpräfix und den entsprechenden Microservice _/order_, _/inventory_, _/warehouse_ oder _/log_ erreichbar.
+
+Um mit Anpassungen an der Schnittstelle besser umgehen zu können, soll auf einer Resource zusätzlich eine Version angegeben werden müssen. Den ursprünglich geplanten Versionspräfix _v1/_ wurde mit einem Header Attribut ersetzt, da dieser Out-of-the-Box von Micronaut unterstützt wird und so für einzelne Resource eine Version einfach erstellt werden kann.
+
+Entsprechend würde eine URL wie folgt aussehen:
+
+```cli
+https://www.g04.swda.hslu-edu.ch/api/order/orders
+```
+
+Ob weitere Resourcen nur referenziert (Hypermedia: HATEOAS Hypermedia as the engine of application state) werden, bleibt offen.
+
+==== DTO / Entities
+
+Gegen aussen werden DTOs zugänglich gemacht. Diese werden aus den tatsächlich internen Repräsentationen/Entities gemappt.
+Durch dieses Brechen der Datentypen wird die Kopplung zwischen den Micro Services veringert.
+Eine Entität soll wenn möglich mindestens ein eindeutiges Attribut (z.B. Nummer, E-Mail, Benutzername) besitzen (≠ ID). Die ObjectId ist ein Primary Key, generiert durch das DBMS, für den internen Gebrauch und kann eindeutig ein Entity referenzieren. Wir geben diesen im Normalfall nicht heraus.
+
+
+==== Commands, Events & Hoheit
+
+Wir haben unsere Messages versucht in https://codeopinion.com/commands-events-whats-the-difference/[Commands und Events] aufzuteilen. 
+
+===== Command
+Ein Command stellt einen direkten Aufruf zu einer bestimmten Funktionalität dar, dass eine bestimmte Aktion erfolgen soll. Die mitgegebenen Daten sind für den spezifischen Aufruf zugeschnitten. Bei einem Command kann oder wird meistens eine Response erwartet.
+
+Die "Kopplung" ist bei Commands höher. Ein Beispiel in unserem System ist der Aufruf zur Validation einer Artikelposition einer Bestellung vom Order- an den Inventory-Service.
+
+"The purpose of commands is the intent to invoke behavior"
+
+===== Events
+Ein Event informiert allgemein über ein erfolgtes Ereignis. Es hat bereits stattgefunden, ist also immutable. Die Daten sind eher von allgemeiner Natur, ein angesprochener Handler muss sich allenfalls weitere Daten ergänzend hinzuziehen.
+
+Ein Beispiel in unserem System ist der allgemeine Bestellstatus hat sich geändert Event. 
+
+===== Hoheit
+Wir haben auch viel diskutiert, wer die "Hoheit" über einen Event (oder Command) hat. Wir nehmen das konkrete Beispiel und auch von uns diskutierte Emailversand:
+
+1. Order-Service ruft sendMail auf Mail-Service auf
+2. Mail-Service reagiert auf den allgemeinen OrderStatusChangedEvent
+3. Ein Zwischenglied "Notification" wird eingesetzt.
+
+Im ersten Moment ist die Sache klar. Option 1, dass OrderService sendMail aufruft ist das einfachste. Doch entweder muss nun OrderService ein Email-Template mitschicken, was nicht unbedingt in den Order-Service gehört, oder Mail-Service muss ein sendOrderStatusReadyMail implementieren. Option 2 ist nicht viel besser, denn der Mail-Service sollte sich nur mit dem Versand von Mails beschäftigen, auf irgendwelche Events zu reagieren verletzt das Single Responsibility Principle des Mail-Services.
+
+Der beste Ansatz in diesem konkreten Beispiel wäre unserer Meinung nach eine eigene Komponente, welche sich mit Notifications auseinandersetzt. Der Order-Service sendet weiterhin seinen generischen OrderStatusChanged Event. Notification-MS hört diesen und bereitet die Anfrage vor und schickt eine Mail über den Mail-Service. Weiter könnte der Notification sogleich die präferierte Mitteilungseinstellung des Users (Mail, SMS etc.) sowie seine Sprache miteinbeziehen, und der Mail-Service ist nur für den Versand von Mails zuständig.
+
+
+=== Three Layered Architecture
+
+Das Backend wurde gemäss der https://medium.com/@deanrubin/the-three-layered-architecture-fe30cb0e4a6[Three Layered Architecture] strukturiert.
+
+image::Service_Controller-Service-Repository.jpg["Controller Service Repository"]
+
+image::Micronaut-Service-Strukturierung.png["Projekt Strukturierung"]
+
+==== Presentation Layer (Controllers)
+
+Einstiegspunkt, welcher (Business-) Funktionalitäten zur Verfügung stellt. Unsere auf HTTP-REST basierende Endpunkte liefern Daten im JSON-Format oder allfällige HTTP-Reponse Codes zurück.
+
+==== Application Service Layer (Services)
+
+Implementation der Logik, Datentransformation (DTO - Entity Mapping).
+
+==== Data Access Layer (Repositories)
+
+Kommunikation mit der Datenbank/Source.

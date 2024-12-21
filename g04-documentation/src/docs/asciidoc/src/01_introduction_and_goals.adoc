@@ -1,0 +1,21 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-introduction-and-goals]]
+==	Einführung und Ziele
+
+[quote, Übernommen aus SWDA_24FS_Filialbestellsystem_Auftrag.pdf]
+____
+Der Kunde hat ein Bestellsystem für seine dezentralen Filialen bestellt. Jede Filiale hat ein eigenes lokales Lager, welches ein lokales Sortiment verwaltet. Für alle Filialen gemeinsam existiert ein zentrales Lager. Dieses wird in einem bestehenden System (Legacy System) verwaltet, und soll über eine (gelieferte) klassische, class-based Java- API eingebunden werden. Im zentralen Lager sind die Artikel entweder sofort lieferbar oder haben eine Lieferfrist. Die einzelnen Artikel werden ausschliesslich über eine Artikelnummer identifiziert (keine Artikel-Bezeichnung, kein Artikelsortiment). Die Buchhaltung inkl. Mahnwesen für die Rechnungserstellung und -behandlung ist nicht Teil dieses Projektes, die Integration muss aber entworfen werden.
+____
+
+Das Team selbst verfügt über eine gewisse Freiheit bezüglich Priorität und konkreter Implementation der vorgegebenen Anforderungen in Form der Epics. Zudem werden eigenverantwortlich aus den Epics passende User Stories (als Issues) abgeleitet und Aktzeptanzkriterien & technische Randbedingungen definiert sowie der Aufwand geschätzt.
+
+
+=== Qualitätsziele
+
+.Folgende Qualitätsziele stellen wir an unser FBS:
+* Widerstandsfähigkeit / Resilienz
+* Skalierbarkeit
+* Wartbarkeit
+
+Unter Resilienz versteht sich bei Störungen, Problemen und Unvorhergesehenem Verhalten beispielsweise dem Ausfall einer Komponente robust zu reagieren. Die zu implementierende Microservice Architektur schafft bereits Abhilfe bezüglich einem Komplettausfall und das Messaging über RabbitMQ bei einzelnen Services. Skalierbarkeit ist die Fähigkeit des Systems (dynamisch) mehr Ressourcen zu allokieren, beispielsweise indem mehrere Instanzen hochgefahren werden. Zuletzt Wartbarkeit, dafür ist besonders auf die Code Qualität zu achten und hier schaffen die verwendeten Frameworks wie Micronaut und eine saubere Strukturierung abhilfe.

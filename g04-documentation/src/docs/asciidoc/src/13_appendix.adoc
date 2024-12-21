@@ -1,0 +1,169 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-appendix]]
+== Anhang
+=== Messaging
+* direct: exact match of routing key
+* *topic: pattern match of routing key*
+* headers: exact match of headers
+* fanout: all messages go to all destinations
+
+[cols="2,2,2,2,2"]
+|===
+| Exchange | Typ | Routing/binding key | Queue(s) | Data
+| fbs.order | topic | order.status-changed.* (received, partially-ready, faulty, payment-check, needs-approval, ready, shipped, completed, canceled) | LogBusinessCaseQ | OrderStatusChangedDto
+| fbs.order | topic | order.status-changed.ready | SendReadyToShipMailQ, GeneratePaymentQ | OrderStatusChangedDto
+| fbs.order | topic | inventory.validate-order-position | ValidatePositionQ  | ValidateOrderPositionDto
+| fbs.inventory | topic | order.validated-order-position.* (reordered, faulty, ready) | ValidatedPositionQ | ValidatedOrderPositionDto
+| fbs.order | topic | payment.check-customer | CheckCustomerQ | CheckCustomerPaymentDto
+| fbs.payment | topic | order.checked-customer.* (pending, completed) | CheckedCustomerQ | CheckedCustomerPaymentDto
+| fbs.mail | topic | mail.send | SendMailQ | CreateMailDto
+|===
+
+(Mit Kennzeichnung Event und Commands)
+
+image::RMQ_events-and-commands.jpg["Events und Commands"]
+
+[source,typescript]
+----
+/* Events */
+/* --------- Order-Service --------- */
+interface OrderStatusChangedDto {
+  orderNumber: string;
+  customerEmail: string;
+  sellerEmail: string;
+  triggeredAt: instant;
+  state: OrderState;
+}
+
+/* Commands */
+interface ValidateOrderPositionDto {
+  orderNumber: string;
+  articleNumber: string;
+  amount: int;
+}
+
+interface ValidatedOrderPositionDto {
+  orderNumber: string;
+  articleNumber: string;
+  state: OrderPositionState;
+}
+
+interface CheckCustomerPaymentDto {
+  orderNumber: string;
+  customerEmail: string;
+}
+
+interface CheckedCustomerPaymentDto {
+  orderNumber: string;
+  customerEmail: string;
+  state: PaymentState ;
+}
+
+/* ------------------ */
+
+enum OrderState {
+  RECEIVED,
+  PARTIALLY_READY,
+  FAULTY,
+  NEEDS_APPROVAL,
+  READY,
+  SHIPPED,
+  COMPLETED,
+  CANCELED
+}
+
+enum OrderPositionState {
+  UNKNOWN,
+  REORDERED,
+  FAULTY,
+  READY
+}
+
+enum PaymentState {
+  PENDING,
+  COMPLETED
+}
+
+/* --------- Warehouse-Service --------- */
+interface CreateOrderDto {
+    articleNumber : int;
+    articleCount  : int;
+    orderContact  : string;
+
+}
+
+interface CreateStockArticleDto {
+    articleNumber : string;
+}
+
+interface OrderDto {
+    orderNumber  : int;
+    articleNumber : int;
+    articleCount : int;
+    articleDeliveryDate : LocalDate;
+    orderDate : LocalDate;
+    orderContact : string;
+}
+
+interface StockArticleDto {
+    articleNumber : int;
+    articleCount : int;
+    articleDeliveryDate : LocalDate;
+    articlePrice : double;
+}
+
+/* --------- Mail-Service --------- */
+interface CreateMailDto {
+    mailAddress : string;
+    mailHeaderTitle : string;
+    mailText : string;
+}
+
+
+----
+
+=== Postman Systemtest
+==== FBS Environment Variables 
+
+image::postman/pm_FBS-environment-variables.png["Postman"]
+
+
+==== Setup
+===== S01 - Create branch "A"
+
+image::postman/pm_S01-1_pre-req-script.png["Postman"]
+
+image::postman/pm_S01-2_payload.png["Postman"]
+
+image::postman/pm_S01-3_post-res-script.png["Postman"]
+
+===== S02 - Create inventory for article "1" in branch "A"
+
+image::postman/pm_S02-1_pre-req-script.png["Postman"]
+
+image::postman/pm_S02-2_payload.png["Postman"]
+
+image::postman/pm_S02-3_post-res-script.png["Postman"]
+
+image::postman/pm_S02-4_validation.png["Postman"]
+
+===== S04 - Create user (seller)
+
+image::postman/pm_S04-1_pre-req-script.png["Postman"]
+
+image::postman/pm_S04-2_payload.png["Postman"]
+
+image::postman/pm_S04-3_post-res-script.png["Postman"]
+
+
+==== Tests
+===== T01 - Create order '1' (Ready)
+
+image::postman/pm_T01-1_pre-req-script.png["Postman"]
+
+image::postman/pm_T01-2_payload.png["Postman"]
+
+image::postman/pm_T01-3_post-res-script.png["Postman"]
+
+image::postman/pm_T01-4_validation.png["Postman"]

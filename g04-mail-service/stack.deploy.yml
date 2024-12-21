@@ -1,0 +1,32 @@
+version: '3.5'
+
+networks:
+  ingress:
+    name: traefik-public
+    external: true
+  bus:
+    name: bus
+    external: true
+
+services:
+
+  app:
+    image: $CICD_IMAGE_ID
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-mail-service'
+      - 'MICRONAUT_SERVER_PORT=8096'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+    networks:
+      - bus
+      - ingress
+    deploy:
+      replicas: 1
+      labels:
+        # - "traefik.http.routers.${CICD_STACK_NAME}App.rule=Host(`${CI_PROJECT_NAME}.${TLD}`)"
+        - "traefik.http.routers.${CICD_STACK_NAME}App.rule=Host(`www.${TLD}`) && PathPrefix(`/api/mail`)"
+        - "traefik.http.services.${CICD_STACK_NAME}App.loadbalancer.server.port=8096"
+        - 'traefik.http.routers.${CICD_STACK_NAME}App.entrypoints=websecure'
+        - 'traefik.http.routers.${CICD_STACK_NAME}App.tls.certresolver=letsencrypt'
+

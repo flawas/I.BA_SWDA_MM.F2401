@@ -1,0 +1,61 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-solution-strategy]]
+== Lösungsstrategie
+=== Technologieentscheide
+
+==== Frameworks
+Es werden möglichst mit den vorgeschlagenen Technologien gearbeiteitet. Es wird ein **Java** Projekt mit Microservice Architektur umgesetzt. 
+
+.Dafür werden folgende Frameworks eingesetzt:
+* **RabbitMQ**: Als Message Broker
+* **Micronaut**: Für leichtgewichtige Microservices 
+* **MongoDB**: Als NoSQL Datenbank Management System (DBMS)
+
+.Des Weiteren möchten wir folgende Technologien einsetzen:
+* https://micronaut-projects.github.io/micronaut-data/latest/guide/[**Micronaut Data**]: Als Object-Relational Mapper (OR-Mapper)
+* **Swagger/OpenAPI**: Zur Definition/Dokumentation der REST Schnittstellen.
+
+==== Testing
+.Für das Testing werden bereits aus vorgängigen Modulen bekannte Frameworks eingesetzt:
+* **Jupiter/JUnit**: Unit Testing Framework
+* **Mockito**: Zum Erstellen von Test Doubles
+* **AssertJ**: Schönere asserts
+* **Testcontainers**: Leichtgewichtige Testinstanzen
+* **Unirest**: Leichtgewichtige Testinstanzen
+
+==== User Interface
+Es wird kein GUI implementiert, stattdessen werden mit **Postman** Anfragen verschickt und Antworten ausgewertet.
+
+==== Versionierung & Deployment
+* **GitLab**: Versionskontrollsystem
+
+==== Nicht definitiv
+* **JWT**: JSON Web Tokens für Authentifizierung & Autorisierung
+* **KrakenD**: API Gateway
+
+Des Weiteren wäre **Chaos Engineering** eine spannende Thematik/Praktik, welche sich in diesem Projekt gut eignen würde. Aus zeitgründen schätzen wir dies jedoch als nicht umsetzbar ein.
+
+Alternativ zu HTTP REST wäre auch GraphQL eine spannende und aktuelle Technologie, besonders hinsichtlich der Vorlesung thematisierten dynamischen Resourcenabfrage (statt HATEOS/Links). 
+
+
+=== Microservice Architektur
+
+Diese Microservices werden über ein Proxy ("API Gateway") angesprochen, kommunizieren untereinander via Messaging mittels RabbitMQ und machen eine REST-API gegen aussen zugänglich.
+
+.Über das Domänenmodell haben wir fünf Microservices erkannt und geplant umzusetzen:
+* **Order**: Bestellungen, Bestellstatus, 
+* **Inventory**: Filiallager: Inventar, Filialsortiment
+* **Warehouse**: Zentrallager: Artikelkatalog, Zentrallager, Nachbestellungen
+* **Log**: Protokollierung: Fehler, Geschäftsfälle
+* **Mail**: Notifications, Emailversand
+
+.Weitere denkbare Microservices in einem Filialbestellsystem umfassen folgende: 
+* **Identity**: Benutzer, Rollen, Credentials (Authentifizierung, Autorisierung)
+* **User**: Personen- & Adressverwaltung
+* **Payment**: Zahlungsabwicklung
+* **Pricing**: Preise, Aktionen/Rabatte
+
+image::Micro-Service-Modell.png["Micro Service Modell (SWDA Notation)"]
+
+Der einfache Bestellprozess wird ausgelöst durch das Erstellen einer Bestellung via Order REST API. Dazu werden Daten gemäss CreateOrderDTO benötigt. Intern wird nun der erhalt einer Bestellung bestätigt, und eine Überprüfung der einzelnen Artikelpositionen an das Inventory gesendet. Dieser prüft auf das in genügender Stückzahl vorhanden sein und allenfalls existenz im Artikelkatalog. Ist beides der Fall, wird die einzelne Artikelposition bestätigt zurückgemeldet. Sollten zu wenige Artikel vorhanden sein, wird eine Nachbestellung im Warehouse ausgelöst. Sind anschliessend alle Artikelpositionen bereit bestätigt, wird die Bestellung als an sich als bereit gesetzt und der Geschäftsfall wieder protokolliert.

@@ -1,0 +1,24 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-runtime-view]]
+== Laufzeitsicht
+=== Bestellprozess
+
+Die Fachlichkeit des Bestellprozesses dargestellt als BPMN Diagramm und Eventstorming.
+
+==== Eigene Darstellung der Aufgabenstellung
+
+image::Aufgabenstellung_Bestellprozess-Gesamtübersicht.jpg["Fachlichkeit Bestellprozess"]
+
+==== Business Process Model & Notation
+===== BPMN Einfacher Bestellprozess 
+
+image::bpmb_einfacher_bestellprozess.png["BPMN Einfacher Bestellprozess"]
+
+===== BPMN Datentypist Nachbestellung 
+
+image::bpmn_datentypist_nachbestellung.png["BPMN Datentypist Nachbestellung"]
+
+==== Eventstorming
+
+image::Eventstorming.png["Eventstorming Bestellprozess"]

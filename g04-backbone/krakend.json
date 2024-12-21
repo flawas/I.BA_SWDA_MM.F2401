@@ -1,0 +1,69 @@
+{
+    "$schema": "https://www.krakend.io/schema/v2.6/krakend.json",
+    "version": 3,
+    "port": 6060,
+    "name": "KrakenD - API Gateway",
+    "timeout": "6s",
+    "cache_ttl": "60s",
+    "extra_config": {
+        "qos/ratelimit/service": {
+            "max_rate": 1000,
+            "every": "1m",
+            "capacity": 100,
+            "client_max_rate": 0,
+            "client_capacity": 10
+        },
+        "telemetry/logging": {
+            "level": "WARNING",
+            "prefix": "[KRAKEND]",
+            "stdout": true
+        }
+    },
+    "output_encoding": "json",
+    "endpoints": [
+        {
+            "endpoint": "/order-swagger-ui",
+            "output_encoding": "no-op",
+            "backend": [
+                {
+                    "url_pattern": "/api/order/swagger-ui",
+                    "host": ["http://g04-order-service_app:8094"],
+                    "encoding": "no-op"
+                }
+            ]
+        },
+        {
+            "endpoint": "/api/orders",
+            "method": "GET",
+            "output_encoding": "json-collection",
+            "backend": [
+                {
+                    "url_pattern": "/api/order/orders",
+                    "host": ["http://g04-order-service_app:8094"],
+                    "method": "GET",
+                    "is_collection": true
+                }
+            ]
+        },
+        {
+            "endpoint": "/api/orders/{number}",
+            "method": "GET",
+            "backend": [
+                {
+                    "url_pattern": "/api/order/orders/{number}",
+                    "host": ["http://g04-order-service_app:8094"]
+                }
+            ]
+        },
+        {
+            "endpoint": "/api/orders",
+            "method": "POST",
+            "backend": [
+                {
+                    "url_pattern": "/api/order/orders",
+                    "host": ["http://g04-order-service_app:8094"]
+                }
+            ]
+        }
+    ]
+  }

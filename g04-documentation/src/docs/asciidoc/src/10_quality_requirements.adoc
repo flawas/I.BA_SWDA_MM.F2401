@@ -1,0 +1,99 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-quality-scenarios]]
+== Qualitätsanforderungen
+=== Qualitätstools
+
+.Um die Qualität des Codes sicherzustellen werden folgende Tools verwendet:
+* Checkstyle: Liefert statische Code Analyse.
+* JaCoCo: Wertet die Code Coverage der Tests aus.
+* SonarQube: Inspiziert Code Qualität und kann neben Code Smells und Bugs auch Duplizierten Code, Standarts und weitere Empfehlungen machen. Die Auswertung nach technischen Schulden liefert eine gute Metrik über Aufwand zur Verbesserung.
+* SonarLint: Ein Plugin von Sonar, welches direkt in der IDE bereits Reports zur Qualität des Codes erstellen kann.
+* (SpotBugs)
+
+Viele der genannten Tools konnten aus Zeitgründen leider nur teilweise oder nicht wie geplant eingesetzt werden. Am besten sind solche Tools in der CI/CD Pipeline anzusetzten, sodass diese gezwungenermassen eingsetzt werden müssen.
+
+Wir haben im Projekt einen SonarQube Server aufgesetzt. Jedoch haben wir es nicht geschafft, die Pipeline zu modifizieren, sodass der SonarQube Server direkt als Gate verwendet werden kann. Deshalb hier ein Auszug via Printscreen:
+
+image::SonarQube.png[SonarQube]
+
+https://sonar.g04.swda.hslu-edu.ch[G04 Sonar Qube Instanz]
+
+Die Daten haben wir erhalten, indem mit Maven die Analyse lokal ausgeführt wurde und danach hochgeladen wurde.
+
+[source]
+mvn clean verify sonar:sonar \
+-Dsonar.projectKey=hslu_edu_bachelor-computer-science_swda_24fs01_g04_g04-inventory-service_149cb96d-67ce-4561-9d54-7c3264102427 \
+-Dsonar.projectName='g04-inventory-service' \
+-Dsonar.host.url=https://sonar.g04.swda.hslu-edu.ch \
+-Dsonar.token=TOKEN_FUER_SONARQUBE
+
+*Auswertung SonarQube*
+
+Wie erwartet hat SonarQube sofort die oben genannten Credentials im Mail-Service erkannt. Entsprechend hat der Mail-Service ein Security Rating vom Wert D erhalten. Mithilfe eines Vaults könnte das verbessert werden.
+
+image::SonarQube_Password.png[SonarQube_Password]
+
+
+=== Testing
+==== Teststrategie
+Es wird auf Unit-, Integrations- und Systemtests gesetzt. Die Unit- und Integrationstests sind automatisiert, während die
+Systemtests manuell durchgeführt werden. Für die Tests werden verschiedene Technologien eingesetzt, so werden JUNIT, EqualsVerifier und
+Mockito für die Unit Tests verwendet. Zusätzlich werden TestContainer und Unirest für die Integrationstests genutzt. Systemtests
+werden mit Swagger ui oder Postman durchgeführt. Darüber hinaus werden Logs und Seiten wie z.B. MongoViewer benötigt, um ein
+genaueres Bild der Anwendungsabläufe zu erhalten.
+Die folgende Abbildung gibt einen guten Einblick wie eine API getestet werden kann.
+
+
+image::API_testing_types.png[Entity-Relationship Diagramm Log und Mappers]
+
+
+Von den aufgelisteten Testvarianten werden Smoke Testing, Functional Testing, Integration Testing und Regression Testing
+durchgeführt. Diese helfen während der Entwicklung die Sicherheit zu haben, dass der hinzugefügte Code den Anforderungen entspricht.
+Load-, Stress-, Security-, UI- und Fuzz-Testing werden nicht durchgeführt. Dies bedeutet, dass das System nur auf korrekte
+und nicht übermässige Nutzung getestet wird. Wäre geplant, das System in Betrieb zu nehmen, müssten diese Tests zusätzlich
+durchgeführt werden.
+
+*Entwicklungsvorgehen:* Wir bauten die Microservices nach der 3 Schichtenarchitekur auf. Die Reihenfolge des Aufbaus dieser Schichten
+hat einen grossen Einfluss auf die Integrations-Tests. Denn ein "bottom up" Ansatz, bei welchem sich zuerst um die Datenbank und zuletzt um
+die Persentation Schicht gekümmert wird kann verheerend für die Integration-Tests sein. Denn beim Bau von unten nach oben werden die unteren Schichten
+meist mitgetestet. Die Tests sollten aber möglichst isoliert sein. Darum wurde als Teil der Teststrategie festgehalten und auch so umgesetzt, dass
+zuerst die Rest-API aufgebaut wird, dann das Messaging und erst zum Schluss die Datenbank eingerichtet wird.
+
+
+==== Testdokumentation
+===== Testprotokoll (manuelle Systemtests)
+
+[cols="1,3,3,3,3,15"]
+|===
+| Nr. | Datum | Tester | Version | Status | (Fehler-)Beschreibung
+
+| I | 20.05 | Gian | e107daa2 | 🟢
+| Preis wird nicht gespeichert.
+
+|===
+
+
+.Legende 1: Teststatus
+* 🟢 Erfolgreich
+* 🟠 Teilweise erfolgreich/fehlgeschlagen -> Status auch wenn Lokal erfolgreich jedoch Prod nicht (deployt).
+* 🔴 Fehlgeschlagen
+
+
+====== Testszenario I : Bestellung abfragen (1d, 4a)
+.Voraussetzungen
+* Benutzer erfasst
+* Bestellung(en) erfasst
+
+.Ablauf / Schritte
+* **/orders** aufrufen
+* **/orders/{no}** mit einer Bestellnummer aus orders aufrufen
+
+.Erwartetes Resultat
+* **/orders** liefert alle erfassten Bestellungen zurück
+* **/orders/{no}** liefert die entsprechende Bestellung zurück
+* In einer Bestellung sind die Bestellnummer (Random), Kunde (E-Mail), Verkäufer (E-Mail), Liefer- & Rechnungsadresse, Positionen (bestehend aus Menge und Artikelnummer), Datum/Uhrzeit, **Preis** und ein Bestellstatus vorhanden.
+
+====== Testszenario X : Rechnung erstellen (1g)
+
+====== Testszenario X : Ausstehende Rechnung / Mahnung (1f)

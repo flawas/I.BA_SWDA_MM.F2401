@@ -1,0 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-architecture-constraints]]
+== Randbedingungen
+
+Folgende Tools und Technologiestack ist aufgesetzt und ist empfohlen.
+
+image::Tool-Stack.png["Tools in SWDA"]

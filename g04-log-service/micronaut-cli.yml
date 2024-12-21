@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: ch.hslu.swda
+testFramework: junit
+sourceLanguage: java
+buildTool: maven
+features: [app-name, data, data-mongodb, http-client-test, java, java-application, junit, logback, maven, maven-enforcer-plugin, micronaut-aot, micronaut-build, micronaut-http-validation, mongo-sync, netty-server, rabbitmq, properties, readme, serialization-bson, serialization-jackson, shade, static-resources, openapi, swagger-ui, validation test-resources]

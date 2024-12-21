@@ -1,0 +1,81 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-glossary]]
+== Glossar
+=== Abkürzungsverzeichnis
+
+[cols="e,2e" options="header"]
+|===
+|Abkürzung [A-Z] |Begriff
+
+|CRUD
+|**C**reate **R**ead **U**pdate **D**elete
+
+|DBMS
+|**D**aten**b**ank **M**anagement **S**ystem
+
+|FBS
+|**F**ilial**b**estell**s**ystem
+
+|HSLU
+|**H**och**s**chule **Lu**zern
+
+|JSON
+|**J**ava**S**cript **O**bject **N**otation
+
+|JWT
+|**J**SON **W**eb **T**oken
+
+|ORM / OR-Mapper
+|**O**bject-**R**elational **M**apper
+
+|SWDA
+|Modul **S**oft**w**are **D**evelopment & **A**rchitecture
+|===
+
+
+=== Technische- und Projektspezifische Begriffe
+
+[cols="e,2e" options="header"]
+|===
+|Begriff [A-Z] |Definition und Beschreibung
+
+|AssertJ
+|<Definition>
+
+|Hibernate
+|Hibernate ist ein OR-Mapper für Java. Es ist das Bindeglied zwischen der Datenbank ("Relational") und dem objekt-orientiertem Java Backend.
+
+|Jupiter/JUnit
+|<Definition>
+
+|JSON Web Token
+|Bei JWTs handelt es sich um sessionless Access-Tokens. Über Credentials authentifizieren sich Benutzer und Zugriff auf Ressourcen wird authorisiert. Die Besonderheit ist, dass keine Session eröffnet und stattdessen das übermittelte Token validiert wird.
+
+|Micronaut
+|<Definition>
+
+|Mockito
+|<Definition>
+
+|MongoDB
+|MongoDB ist ein dokumentenorientiertes NoSQL-DBMS. Es verwendet JSON-ähnliche Dokumente.
+
+|OpenAPI / Swagger
+|<Definition>
+
+|Postman
+|<Definition>
+
+|RabbitMQ
+|<Definition>
+
+|REST / RESTful 
+|REST (**Re**presentational **S**tate **T**ransfer) ist ein Paradigma für die Entwicklung von Webservices/APIs. 
+
+|Testcontainers
+|<Definition>
+
+|Traefik
+|Ein Reverse-Proxy und Load-Balancer für HTTP. Traefik Enterprise würde erweiterte Funktionalitäten wie ein API-Gateway liefern.
+|===

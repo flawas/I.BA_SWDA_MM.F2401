@@ -1,0 +1,47 @@
+version: '3.5'
+
+networks:
+  ingress:
+    name: traefik-public
+    external: true
+  bus:
+    name: bus
+    external: true
+  order-internal:
+    name: order-internal
+    external: false
+
+services:
+
+  app:
+    image: $CICD_IMAGE_ID
+    environment:
+      - 'MICRONAUT_APPLICATION_NAME=g04-order-service'
+      - 'MICRONAUT_SERVER_PORT=8094'
+      - 'RABBITMQ_URI=amqp://bus:5672'
+      - 'RABBITMQ_USERNAME=swda'
+      - 'RABBITMQ_PASSWORD=swda'
+      - 'MONGODB_URI=mongodb://order-mongodb:27017/order-db'
+      - 'MONGODB_PACKAGE_ENTITIES=ch.hslu.swda.data.entities'
+    networks:
+      - bus
+      - ingress # Comment out to disable direct external access
+      - order-internal
+    deploy:
+      replicas: 1
+      labels: # Comment out to disable direct external access
+        # - "traefik.http.routers.${CICD_STACK_NAME}App.rule=Host(`${CI_PROJECT_NAME}.${TLD}`)"
+        - "traefik.http.routers.${CICD_STACK_NAME}App.rule=Host(`www.${TLD}`) && PathPrefix(`/api/order`)"
+        - "traefik.http.services.${CICD_STACK_NAME}App.loadbalancer.server.port=8094"
+        - 'traefik.http.routers.${CICD_STACK_NAME}App.entrypoints=websecure'
+        - 'traefik.http.routers.${CICD_STACK_NAME}App.tls.certresolver=letsencrypt'
+
+  order-mongodb:
+    image: cr.gitlab.switch.ch/hslu/shared/devops/docker-cache/bitnami/mongodb:4.2.19
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: 'root'
+#      MONGO_INITDB_ROOT_PASSWORD: 'root'
+    networks:
+      - order-internal
+    deploy:
+      replicas: 1

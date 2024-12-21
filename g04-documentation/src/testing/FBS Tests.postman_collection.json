@@ -1,0 +1,950 @@
+{
+	"info": {
+		"_postman_id": "795415c9-b543-43c0-b28c-92eb7fe46baf",
+		"name": "FBS Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "9087560"
+	},
+	"item": [
+		{
+			"name": "Setup",
+			"item": [
+				{
+					"name": "S01 - Create branch \"A\"",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create new branch\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"    pm.expect(res.branchName).to.eql(pm.collectionVariables.get(\"branch_A_name\"));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.clear();\r",
+									"\r",
+									"const companyName = pm.variables.replaceIn(\"{{$randomCompanyName}}\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"branch_A_number\", companyName.substring(0, 3));\r",
+									"pm.collectionVariables.set(\"branch_A_name\", companyName);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"branchNumber\": \"{{branch_A_number}}\",\r\n    \"branchName\": \"{{branch_A_name}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{FBS_URL}}{{INVENTORY_SERVICE}}/branches",
+							"host": [
+								"{{FBS_URL}}{{INVENTORY_SERVICE}}"
+							],
+							"path": [
+								"branches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S02 - Create inventory for article \"1\" in branch \"A\"",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test fails as no response is returned by POST -> Seperate check\r",
+									"/*pm.test(\"Create new inventory for article '1' of branch 'A'\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.articleNumber).to.eql(pm.collectionVariables.get(\"inv_1_number\"));\r",
+									"    pm.expect(res.stockDescription).to.eql(pm.collectionVariables.get(\"inv_1_name\"));\r",
+									"    pm.expect(res.stock).to.eql(pm.collectionVariables.get(\"inv_1_stock\"));\r",
+									"    pm.expect(res.article.articlePrice).to.eql(pm.collectionVariables.get(\"inv_1_price\"));\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"    //pm.expect(res.description).to.eql(pm.collectionVariables.get(\"inv_1_description\"));\r",
+									"});*/\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const number = require('lodash').random(100_000, 999_999)\r",
+									"const product = pm.variables.replaceIn(\"{{$randomProduct}}\");\r",
+									"const price = pm.variables.replaceIn(\"{{$randomPrice}}\");\r",
+									"const amount = pm.variables.replaceIn(\"{{$randomInt}}\");\r",
+									"// const description = pm.variables.replaceIn(\"{{$randomLoremSentence}}\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"inv_1_number\", number);\r",
+									"pm.collectionVariables.set(\"inv_1_name\", product);\r",
+									"pm.collectionVariables.set(\"inv_1_stock\", amount);\r",
+									"pm.collectionVariables.set(\"inv_1_price\", price);\r",
+									"// pm.collectionVariables.set(\"inv_1_description\", description);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"articleNumber\": \"{{inv_1_number}}\",\r\n    \"stockDescription\": \"{{inv_1_name}}\",\r\n    \"stock\": {{inv_1_stock}},\r\n    \"minimalStock\": 0,\r\n    \"reservedStock\": 0,\r\n    \"article\": {\r\n      \"articleNumber\": {{inv_1_number}},\r\n      \"articleCount\": {{inv_1_stock}},\r\n      \"articleDeliveryDate\": \"2024-06-07\",\r\n      \"price\": \"{{inv_1_price}}\"\r\n    },\r\n    \"branchNumber\": \"{{branch_A_number}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{FBS_URL}}{{INVENTORY_SERVICE}}/inventory",
+							"host": [
+								"{{FBS_URL}}{{INVENTORY_SERVICE}}"
+							],
+							"path": [
+								"inventory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S02 - Create inventory for article \"1\" in branch \"A\" check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create new inventory for article '1' of branch 'A'\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.articleNumber).to.eql(pm.collectionVariables.get(\"inv_1_number\").toString());\r",
+									"    pm.expect(res.stockDescription).to.eql(pm.collectionVariables.get(\"inv_1_name\"));\r",
+									"    pm.expect(res.stock).to.eql(parseInt(pm.collectionVariables.get(\"inv_1_stock\")));\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"    //pm.expect(res.description).to.eql(pm.collectionVariables.get(\"inv_1_description\"));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{FBS_URL}}{{INVENTORY_SERVICE}}/stock/{{inv_1_number}}",
+							"host": [
+								"{{FBS_URL}}{{INVENTORY_SERVICE}}"
+							],
+							"path": [
+								"stock",
+								"{{inv_1_number}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S03 - Create inventory for article \"2\" in branch \"A\"",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const number = require('lodash').random(100_000, 999_999)\r",
+									"const product = pm.variables.replaceIn(\"{{$randomProduct}}\");\r",
+									"const price = pm.variables.replaceIn(\"{{$randomPrice}}\");\r",
+									"const amount = pm.variables.replaceIn(\"{{$randomInt}}\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"inv_2_number\", number);\r",
+									"pm.collectionVariables.set(\"inv_2_name\", product);\r",
+									"pm.collectionVariables.set(\"inv_2_stock\", amount);\r",
+									"pm.collectionVariables.set(\"inv_2_price\", price);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"articleNumber\": \"{{inv_2_number}}\",\r\n    \"stockDescription\": \"{{inv_2_name}}\",\r\n    \"stock\": {{inv_2_stock}},\r\n    \"minimalStock\": 0,\r\n    \"reservedStock\": 0,\r\n    \"article\": {\r\n      \"articleNumber\": {{inv_2_number}},\r\n      \"articleCount\": {{inv_2_stock}},\r\n      \"articleDeliveryDate\": \"2024-06-07\",\r\n      \"price\": \"{{inv_2_price}}\"\r\n    },\r\n    \"branchNumber\": \"{{branch_A_number}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{FBS_URL}}{{INVENTORY_SERVICE}}/inventory",
+							"host": [
+								"{{FBS_URL}}{{INVENTORY_SERVICE}}"
+							],
+							"path": [
+								"inventory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S03 - Create inventory for article \"2\" in branch \"A\" check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create new inventory for article '1' of branch 'A'\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.articleNumber).to.eql(pm.collectionVariables.get(\"inv_2_number\").toString());\r",
+									"    pm.expect(res.stockDescription).to.eql(pm.collectionVariables.get(\"inv_2_name\"));\r",
+									"    pm.expect(res.stock).to.eql(parseInt(pm.collectionVariables.get(\"inv_2_stock\")));\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{FBS_URL}}{{INVENTORY_SERVICE}}/stock/{{inv_2_number}}",
+							"host": [
+								"{{FBS_URL}}{{INVENTORY_SERVICE}}"
+							],
+							"path": [
+								"stock",
+								"{{inv_2_number}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S04 - Create user (seller)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create seller\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.firstname).to.eql(pm.collectionVariables.get(\"seller_firstName\"));\r",
+									"    pm.expect(res.lastname).to.eql(pm.collectionVariables.get(\"seller_lastName\"));\r",
+									"    pm.expect(res.email).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"    pm.expect(res.role).to.eql(\"SELLER\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const sellerFirstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r",
+									"const sellerLastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"seller_firstName\", sellerFirstName);\r",
+									"pm.collectionVariables.set(\"seller_lastName\", sellerLastName);\r",
+									"pm.collectionVariables.set(\"seller_email\", `${sellerFirstName.toLowerCase()}.${sellerLastName.toLowerCase()}@seller.com`);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstname\": \"{{seller_firstName}}\",\r\n    \"lastname\": \"{{seller_lastName}}\",\r\n    \"email\": \"{{seller_email}}\",\r\n    \"branchNumber\": \"{{branch_A_number}}\",\r\n    \"role\": \"SELLER\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/users",
+							"host": [
+								"{{FBS_URL}}{{ORDER_SERVICE}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "S05 - Create user (customer)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create customer\", () => {\r",
+									"    const res = pm.response.json();\r",
+									"    pm.expect(res.firstname).to.eql(pm.collectionVariables.get(\"customer_firstName\"));\r",
+									"    pm.expect(res.lastname).to.eql(pm.collectionVariables.get(\"customer_lastName\"));\r",
+									"    pm.expect(res.email).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+									"    pm.expect(res.branchNumber).to.eql(pm.collectionVariables.get(\"branch_A_number\"));\r",
+									"    pm.expect(res.role).to.eql(\"CUSTOMER\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 100ms\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const customerFirstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r",
+									"const customerLastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"customer_firstName\", customerFirstName);\r",
+									"pm.collectionVariables.set(\"customer_lastName\", customerLastName);\r",
+									"pm.collectionVariables.set(\"customer_email\", `${customerFirstName.toLowerCase()}.${customerLastName.toLowerCase()}@customer.com`);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstname\": \"{{seller_firstName}}\",\r\n    \"lastname\": \"{{seller_lastName}}\",\r\n    \"email\": \"{{seller_email}}\",\r\n    \"branchNumber\": \"{{branch_A_number}}\",\r\n    \"role\": \"SELLER\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/users",
+							"host": [
+								"{{FBS_URL}}{{ORDER_SERVICE}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tests",
+			"item": [
+				{
+					"name": "T01 - Create order '1' (Ready)",
+					"item": [
+						{
+							"name": "T01 - Create order '1'",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Create new order '1'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"RECEIVED\");\r",
+											"\r",
+											"    // Save order number\r",
+											"    pm.collectionVariables.set(\"order_1_number\", res.number);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const order1_billingAndShippingAddress1 = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order1_billingAndShippingCity = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order1_billingAndShippingPostalCode = pm.variables.replaceIn(\"{{$randomInt}}\");\r",
+											"const order1_billingAndShippingCountry = pm.variables.replaceIn(\"{{$randomCountry}}\");\r",
+											"\r",
+											"pm.collectionVariables.set(\"order_1_address1\", order1_billingAndShippingAddress1);\r",
+											"pm.collectionVariables.set(\"order_1_city\", order1_billingAndShippingCity);\r",
+											"pm.collectionVariables.set(\"order_1_postalCode\", order1_billingAndShippingPostalCode)\r",
+											"pm.collectionVariables.set(\"order_1_country\", order1_billingAndShippingCountry)\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"customerEmail\": \"{{customer_email}}\",\r\n    \"sellerEmail\": \"{{seller_email}}\",\r\n    \"billingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_1_address1}}\",\r\n        \"city\": \"{{order_1_city}}\",\r\n        \"zipCode\": \"{{order_1_postalCode}}\",\r\n        \"country\": \"{{order_1_country}}\"\r\n    },\r\n    \"shippingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_1_address1}}\",\r\n        \"city\": \"{{order_1_city}}\",\r\n        \"zipCode\": \"{{order_1_postalCode}}\",\r\n        \"country\": \"{{order_1_country}}\"\r\n    },\r\n    \"positions\": [\r\n        {\r\n            \"articleNumber\": \"{{inv_1_number}}\",\r\n            \"amount\": 1\r\n        },\r\n        {\r\n            \"articleNumber\": \"{{inv_2_number}}\",\r\n            \"amount\": 2\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "T01 - Validate order '1' -> Ready",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Validate order '1'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"READY\");\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders/{{order_1_number}}",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders",
+										"{{order_1_number}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "T02 - Create order '2' (Needs approval)",
+					"item": [
+						{
+							"name": "T02 - Create order '2'",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Create new order '2'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"RECEIVED\");\r",
+											"\r",
+											"    // Save order number\r",
+											"    pm.collectionVariables.set(\"order_2_number\", res.number);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const order2_billingAndShippingAddress1 = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order2_billingAndShippingCity = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order2_billingAndShippingPostalCode = pm.variables.replaceIn(\"{{$randomInt}}\");\r",
+											"const order2_billingAndShippingCountry = pm.variables.replaceIn(\"{{$randomCountry}}\");\r",
+											"\r",
+											"pm.collectionVariables.set(\"order_2_address1\", order2_billingAndShippingAddress1);\r",
+											"pm.collectionVariables.set(\"order_2_city\", order2_billingAndShippingCity);\r",
+											"pm.collectionVariables.set(\"order_2_postalCode\", order2_billingAndShippingPostalCode)\r",
+											"pm.collectionVariables.set(\"order_2_country\", order2_billingAndShippingCountry)\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"customerEmail\": \"{{customer_email}}\",\r\n    \"sellerEmail\": \"{{seller_email}}\",\r\n    \"billingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_2_address1}}\",\r\n        \"city\": \"{{order_2_city}}\",\r\n        \"zipCode\": \"{{order_2_postalCode}}\",\r\n        \"country\": \"{{order_2_country}}\"\r\n    },\r\n    \"shippingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_2_address1}}\",\r\n        \"city\": \"{{order_2_city}}\",\r\n        \"zipCode\": \"{{order_2_postalCode}}\",\r\n        \"country\": \"{{order_2_country}}\"\r\n    },\r\n    \"positions\": [\r\n        {\r\n            \"articleNumber\": \"{{inv_1_number}}\",\r\n            \"amount\": 1\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "T02 - Validate order '2' -> Needy approval",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Validate order '2'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"NEEDS_APPROVAL\");\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders/{{order_2_number}}",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders",
+										"{{order_2_number}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "T03 - Create order '3' (Faulty)",
+					"item": [
+						{
+							"name": "T03 - Create order '3'",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Create new order '3'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"RECEIVED\");\r",
+											"\r",
+											"    // Save order number\r",
+											"    pm.collectionVariables.set(\"order_3_number\", res.number);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const order3_billingAndShippingAddress1 = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order3_billingAndShippingCity = pm.variables.replaceIn(\"{{$randomStreetAddress}}\");\r",
+											"const order3_billingAndShippingPostalCode = pm.variables.replaceIn(\"{{$randomInt}}\");\r",
+											"const order3_billingAndShippingCountry = pm.variables.replaceIn(\"{{$randomCountry}}\");\r",
+											"\r",
+											"pm.collectionVariables.set(\"order_2_address1\", order3_billingAndShippingAddress1);\r",
+											"pm.collectionVariables.set(\"order_2_city\", order3_billingAndShippingCity);\r",
+											"pm.collectionVariables.set(\"order_2_postalCode\", order3_billingAndShippingPostalCode)\r",
+											"pm.collectionVariables.set(\"order_2_country\", order3_billingAndShippingCountry)\r",
+											"\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"customerEmail\": \"{{customer_email}}\",\r\n    \"sellerEmail\": \"{{seller_email}}\",\r\n    \"billingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_3_address1}}\",\r\n        \"city\": \"{{order_3_city}}\",\r\n        \"zipCode\": \"{{order_3_postalCode}}\",\r\n        \"country\": \"{{order_3_country}}\"\r\n    },\r\n    \"shippingAddress\": {\r\n        \"firstname\": \"{{customer_firstName}}\",\r\n        \"lastname\": \"{{customer_lastName}}\",\r\n        \"address1\": \"{{order_3_address1}}\",\r\n        \"city\": \"{{order_3_city}}\",\r\n        \"zipCode\": \"{{order_3_postalCode}}\",\r\n        \"country\": \"{{order_3_country}}\"\r\n    },\r\n    \"positions\": [\r\n        {\r\n            \"articleNumber\": \"000000\",\r\n            \"amount\": 1\r\n        },\r\n        {\r\n            \"articleNumber\": \"{{inv_2_number}}\",\r\n            \"amount\": 1\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "T03 - Validate order '3' -> Faulty",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Validate order '3'\", () => {\r",
+											"    const res = pm.response.json();\r",
+											"    pm.expect(res.number).to.not.oneOf([null, undefined, \"\"]);\r",
+											"    pm.expect(res.customerEmail).to.eql(pm.collectionVariables.get(\"customer_email\"));\r",
+											"    pm.expect(res.sellerEmail).to.eql(pm.collectionVariables.get(\"seller_email\"));\r",
+											"    pm.expect(res.state).to.eql(\"FAULTY\");\r",
+											"});\r",
+											"\r",
+											"pm.test(\"Response time is less than 100ms\", () => {\r",
+											"    pm.expect(pm.response.responseTime).to.be.below(100);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{FBS_URL}}{{ORDER_SERVICE}}/orders/{{order_3_number}}",
+									"host": [
+										"{{FBS_URL}}{{ORDER_SERVICE}}"
+									],
+									"path": [
+										"orders",
+										"{{order_3_number}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "branch_A_number",
+			"value": ""
+		},
+		{
+			"key": "branch_A_name",
+			"value": ""
+		},
+		{
+			"key": "inv_1_number",
+			"value": ""
+		},
+		{
+			"key": "inv_1_name",
+			"value": ""
+		},
+		{
+			"key": "inv_1_stock",
+			"value": ""
+		},
+		{
+			"key": "inv_1_price",
+			"value": ""
+		},
+		{
+			"key": "inv_2_number",
+			"value": ""
+		},
+		{
+			"key": "inv_2_name",
+			"value": ""
+		},
+		{
+			"key": "inv_2_stock",
+			"value": ""
+		},
+		{
+			"key": "inv_2_price",
+			"value": ""
+		},
+		{
+			"key": "seller_firstName",
+			"value": ""
+		},
+		{
+			"key": "seller_lastName",
+			"value": ""
+		},
+		{
+			"key": "seller_email",
+			"value": ""
+		},
+		{
+			"key": "customer_firstName",
+			"value": ""
+		},
+		{
+			"key": "customer_lastName",
+			"value": ""
+		},
+		{
+			"key": "customer_email",
+			"value": ""
+		},
+		{
+			"key": "order_1_address1",
+			"value": ""
+		},
+		{
+			"key": "order_1_city",
+			"value": ""
+		},
+		{
+			"key": "order_1_postalCode",
+			"value": ""
+		},
+		{
+			"key": "order_1_country",
+			"value": ""
+		},
+		{
+			"key": "order_1_number",
+			"value": ""
+		},
+		{
+			"key": "order_2_address1",
+			"value": ""
+		},
+		{
+			"key": "order_2_city",
+			"value": ""
+		},
+		{
+			"key": "order_2_postalCode",
+			"value": ""
+		},
+		{
+			"key": "order_2_country",
+			"value": ""
+		},
+		{
+			"key": "order_2_number",
+			"value": ""
+		},
+		{
+			"key": "order_3_number",
+			"value": ""
+		}
+	]
+}

@@ -1,0 +1,266 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-building-block-view]]
+== Bausteinsicht
+=== Filialbestellsystem
+
+image::Deployment.png["Deployment, REST & Messaging"]
+
+Das Filialbestellsystem ermöglicht den Benutzern via REST API von aussen den Zugriff auf Funktionalitäten im Bestellvorgang. 
+
+.Übersicht Microservices: 
+* **Order**: Bestellungen, Bestellstatus (zusätzlich Personen- & Adressverwaltung)
+* **Inventory**: Filiallager: Inventar, Filialsortiment (zusätzlich Preise)
+* **Warehouse**: Zentrallager: Artikelkatalog, Zentrallager, Nachbestellungen
+* **Log**: Protokollierung: Fehler, Geschäftsfälle
+* **Mail**: Versenden von E-Mails: Bestellbestätigung
+
+[cols="1,2" options="header"]
+|===
+| **Name**   | **Verantwortung**
+| Order      | Gian Ott
+| Inventory  | Nico Schneider
+| Warehouse  | Flavio Waser 
+| Mail       | Flavio Waser 
+| Log        | Robin Matter
+|===
+
+
+
+=== Microservices FBS
+
+Im Projektteam haben wir uns entschieden, die wesentlichen Funktionen zuerst umzusetzen. So haben wir mit der Implementation der Services Log, Order, Inventory und Warehouse begonnen. Der Mail-Service kam gegen Ende des Projekts dazu. Auf die einzelnen Services wird in den folgenden Unterkapiteln spezifisch darauf eingegangen.
+
+*Verbesserungen*
+
+Aus Zeitgründen wurde die Userverwaltung und Payment in den Order-Service integriert. In einem grösseren Projekt könnte man dies in seperate Services auslagern, z.B. User-Service und Payment-Service. Weiter ist der Preis direkt als Attribut auf dem Inventar vorhanden, hier wäre eine Auslagerung in einen unabhängigen Pricing-Service sinnvoll. Der Identity-Service für Authentifizierung und Autorisierung wurde nicht umgesetzt, wäre aber auch als seperaten Service angedacht.
+
+image::Domain-Model-and-Bounded-Context.png["Domänenmodell / Bounded Context Diagram"]
+
+
+==== Order - Bestellungen
+
+https://www.g04.swda.hslu-edu.ch/api/order/swagger-ui[Swagger-Ui]
+
+*Funktionalität und Rolle vom Order-Service*
+Im Order-Service werden die Bestellungen der Kunden durch die Verkäufer erfasst und deren aktuellen Bestell-Status abgefragt. Er prüft die Artikelpositionen einer Bestellung im Inventar. *Zusätzlich*, was aber nicht zum Order-Service gehören sollte, werden hier Benutzerdaten verwaltet und Zahlungen generiert.
+
+*REST-API*
+
+.Bestellung(en) einsehen und erstellen
+* GET: /orders -> 200: Liefert alle Bestellungen zurück (OrderDto[])
+* GET: /orders/{Bestellnummer} -> 200: Liefert Bestellungen zurück, wenn gefunden (OrderDto) | 404: Nicht gefunden
+* POST: /orders -> 201: Erfassung neuer Bestellung erfolgreich (CreateOrderDto) | 422: Unprocessable Content / provided attributes are insufficient or invalid
+
+.Zahlung(en) einsehen 
+* GET: /payments -> 200: Liefert alle Zahlungen zurück (PaymentDto[])
+* GET: /payments?customer={Kunden E-Mail} -> 200: Liefert alle Zahlungen eines Kunden zurück, wenn gefunden (PaymentDto[])
+* GET: /payments/{Zahlungsnummer} -> Liefert Zahlungen zurück, wenn gefunden (PaymentDto) | 404: Nicht gefunden
+
+.Benutzer einsehen und erstellen
+* GET: /users -> 200: Liefert alle Benutzer (Kunden, Verkäufer..) zurück (UserDto[])
+* GET: /users/{E-Mail Adresse} -> 200: Liefert Benutzer zurück, wenn gefunden (UserDto) | 404: Nicht gefunden
+* POST: /users -> 201: Erfassung neues Benutzers erfolgreich (UserDto) | 422: Unprocessable Content / provided attributes are insufficient or invalid
+
+
+*Bestell-Status und Lifecycle einer Bestellung*
+
+Folgende Bestellungen sind in unserem FBS aktuell angedacht:
+
+image::Order-States.png[Bestellungen Status Diagramm]
+
+.Weiter existieren die Positionsstatus:
+* Unknown
+* Faulty
+* Ready
+
+Eine neu erstellte Bestellung wird, sofern nicht in der ersten Validation bereits als ungültig zurückgegeben, initial mit dem Status Received (=Erhalten/Eingegangen) versehen. Es werden sogleich alle Artikelpositionen einzeln zur Überprüfung an den Inventar übergeben. Ist die erste Position überprüft worden (unabhängig von deren Status) gilt die Bestellung als Partially Ready. Denn bei von den übrigen Positionen ist der Status noch Unknown. Sind alle Positionen geprüft, jedoch mind. eine Position Faulty, gilt die Bestellung als Faulty. Dieser Status müsste durch einen User-Input (Entweder Nachbesserung der Bestellung oder einer Stornierung) verlassen werden.
+
+Ist die Bestellung nicht Faulty, wechselt sie in den Payment-Check. Werden unbezahlte Rechnungen des Käufers durch den Payment-Service festgestellt, wechselt die Bestellung in den Needs-Approval Status, ansonsten ist sie direkt Ready.
+
+*ERD*
+
+image::ERD-Order.png[Entity-Relationship Diagramm Bestellungen]
+
+
+==== Inventory - Filiallager
+
+https://www.g04.swda.hslu-edu.ch/api/inventory/swagger-ui[Swagger-Ui]
+
+*Funktionalität und Rolle von Inventory-Service:*
+Im Inventory wird das lokale Filiallager verwaltet. Die Filiale kann über ihr eigenes Sortiment entscheiden.
+Eine Bestellung (Order) verfügt über einen Artikel der bestellt wird. Der Service überprüft die Verfügbarkeit dieses Artikels und meldet den Bestellstatus zurück.
+Ist ein Artikel nicht vorhanden wird die Bestellung als ungültig abgeschlossen. Überschreitet die Bestellmenge den Bestand oder die Mindestmenge wird unterschritten, dann wird automatisch eine Nachbestellung beim Zentrallager ausgelöst.
+
+*Branches:*
+Der Service muss zwischen verschiedenen Verkaufsstellen unterscheiden können. Das "Branch"-Attribut macht diese Unterscheidung möglich.
+Die verfügbaren Artikel einer Verkausstelle können über dessen "Branch" abgefragt werden.
+
+*Stock-Entity:*
+Ein Lagerbestand eines Artikels wird als Stock-Entity dargstellt. Der Stock wird über das "ArticleNumber"-Attribut identifiziert und besitzt die gleiche Nummer wie der Artikel.
+Die Eigenschaften des Artikels werden in einem ArticleDto gespeichert. Der Artikel wird vom Warehouse-Service abgefragt.
+Der Bestand wird im "stock"-Attribut gespeichert. Wenn eine Bestellung die vorhanden Menge überschreitet wird die Menge im "reservedStock" gespeichert und eine Nachbestellung der gefragten Menge ausgelöst.
+Wird nach einer Bestellung die Minimalmenge, definiert im "minimalStock", unterschritten wird ebenfalls eine Nachbestellung im Zentrallager ausgelöst.
+
+image::stock-entity.png[Stock Entity]
+
+*DTO & Mapper:*
+
+Die wichtigsten DTOs und Mappers in kürze.
+
+.StockDto & StockMapper
+- Stock-Entity wird auf ein StockDto übertragen inklusive ArticleDto
+- Wird zurückgegeben, wenn Lagerbestand eines Artikels abgefragt wird
+
+.ArticleDto
+- Benötigt keinen Mapper, weil Daten nicht verarbeitet werden
+- Artikel wird vom Warehouse-Serivce abgefragt
+- Artikel wird direkt in StockDto eingebunden
+
+.Validate(d)OrderPositionDto & OrderPositionMapper
+- Order-Service schickt ein ValidateOrderPositionDto, wenn eine Bestellung erstellt wird
+- Validierte Artikelposition wird in ValidatedOrderPositionDto übertragen
+- Order-Service erhält ValidatedOrderPositionDto
+
+*REST-API:*
+
+https://www.g04.swda.hslu-edu.ch/api/order/swagger-ui[Swagger-Ui]
+
+./inventory/
+- GET: alle Artikelbestände über alle Filialen hinweg
+- POST: neuer Artikelbestand erstellen
+
+./stock/(Artikelnummer)
+- GET: Bestand eines bestimmten Artikels
+- PUT: Bestand eines bestimmten Artikels aktualisieren (Bsp. Datentypist)
+
+./branches/
+- GET: alle registrierten Filialen
+- GET _/(Filialnummer)_: bestimmte Filiale
+- POST: Filiale neu registrieren
+
+*RabbitMQ:*
+Der Inventory-Service kommuniziert hauptsächlich mit dem Order-Service über RabbitMQ. Die wichtigsten Geschäftsfälle Ready, Faulty und Reorder werden bei einer eingehenden Bestellung erstellt, auf die der Order-Service reagiert.
+Der Log-Service erhält nur Geschäftsfälle die protokolliert werden müssen.
+
+image::inventory-producer.png[Inventory-Service RabbitMQ producer]
+
+*MongoDB:*
+Der Inventory-Service speichert nur die Stock-Entities exklusive des ArticleDtos. Da der Stock über die Artikelnummer identifiziert wird, wird der Artikel aus dem Warehouse-Serivce mit gleicher Nummer abgefragt.
+Somit verwaltet der Inventory-Service nur die Bestände und nicht deren Artikel.
+
+==== Warehouse - Zentrales Lagersystem
+
+https://www.g04.swda.hslu-edu.ch/api/warehouse/swagger-ui[Swagger-Ui]
+
+*Funktionalität und Rolle von Warehouse-Service:*
+Das Warehouse kann vom Inventory-Service angesprochen werden. Das Warehouse ist das zentrale Warenlager, welches in der Aufgabenstellung implementiert werden musste.
+
+*Warehouse-Entity:*
+Das Warehouse besitzt zwei Entities. Der este Entity ist der Order-Entity. Der Order-Entitiy besitzt eine ID zur Speicherung in der Datenbank, eine generierte Bestellnummer, die Artikelnummer und Artikelstückzahl, Bestell- und Lieferdatum und Bestellkontakt.
+
+Mit dem StockArticle-Entitiy wird die HSLU-API abgebilet. Es gibt eine generierte ID, Artikelnummer, Artikelstückzahl und Lieferdatum. Zusätzlich ergänzen wir die Entitiy mit dem Artikelstückpreis.
+
+*Mapper:*
+Der OrderMapper wandelt eine Order Entity in ein OrderDto um und umgekehrt. Dasselbe macht der StockarticleMapper zwischen StockArticle Entity und StockarticleDto.
+
+*API:*
+Über folgenden API Pfad können alle Bestellungen erhalten werden:
+
+https://www.g04.swda.hslu-edu.ch/api/warehouse/orders[https://www.g04.swda.hslu-edu.ch/api/warehouse/orders
+]
+
+Über folgenden API Pfad können alle bereits bestellen Artikel erhalten werden:
+
+https://www.g04.swda.hslu-edu.ch/api/warehouse/products[https://www.g04.swda.hslu-edu.ch/api/warehouse/products
+]
+
+*RabbitMQ:*
+Der Inventory-Service schickt ein CreateOrderDto Record auf den RabbitMQ. Dadurch wird eine neue Order erstellt und an die Filiale ausgeliefert.
+
+image::ERD-CreateOrderDto.png[CreateOrderDto]
+
+*MongoDB:*
+Jeder Service hat seine eigene MongoDB und so auch der Warehouse-Service. Der Warehouse-Service speichert die erhaltenen Bestellungen, wie auch die Artikel in der Datenbank ab. Abgefragt wird die MongoDB bei API Abfragen um die gespeicherten Artikel oder Bestellungen anzeigen zu können.
+
+image::ERD-Warehouse.png[Entity-Relationship Diagramm Zentrallager]
+
+==== Mail - Mailversand
+
+https://www.g04.swda.hslu-edu.ch/api/mail/swagger-ui[Swagger-Ui]
+
+Funktionalität und Rolle von Mail-Service:
+
+*Mail-Entity:*
+Es gibt keine Entities, da die Daten nicht in eine Datenbank gespeichert werden.
+
+*Mail-Dto:*
+Das CreateMailDto wird von den anderen Services verwendet, um eine Mail zu generieren. Die Services schicken ein CreateMailDto auf den RabbitMQ. Der Mail-Service holt die Dto Objekte vom RabbitMQ ab und versendet die entsprechenden Mails.
+
+*Mapper:*
+Es gibt keine Mappers, da die Daten nicht in eine Datenbank gespeichert werden.
+
+*API:*
+Da der Mail-Service lediglich Mails versenden kann, werden lediglich POST-Requests akzeptiert.
+
+*RabbitMQ:*
+Der Exchange für den Mail-Service ist mail.send und ist mit der MailQ gebunden. Der Mail-Service consumed alles, was unter das Topic mail.* fällt.
+
+*MongoDB:*
+Dieser Microservice besitzt keine MongoDB. Der Mailversand wird mittels Log Einträgen geloggt. Die Logeinträge werden an den Log-Service übergeben.
+
+image::ERD-CreateMailDto.png[ERD-CreateMailDto]
+
+*Verbesserungen*
+
+Credentials sollten niemals im Source Code oder in einem Repository gespeichert werden. Man könnte beispielsweise Produkte wie z.B.  https://www.hashicorp.com/products/vault[Hashicorp Vault] verwenden, um die Credentials sicher zu speichern. So könnte man sicherstellen, dass die Credentials nicht im Klartext im Code sind.
+
+In unserem Projekt haben wir aus Zeitgründen bewusst auf diese Lösung verzichtet.
+
+==== Log - Protokollsystem
+
+https://www.g04.swda.hslu-edu.ch/api/log/swagger-ui[Swagger-Ui]
+
+
+*Funktionalität und Rolle von Log-Service:*
+Alle Services im System können über RabbitMQ Logs zum Log Service schicken. Diese Logs werden in die MongoDB gescheichert
+die sich im Log-Service Container befindet. Durch API abfragen lassen sich alle oder einzelne Logs anzeigen. Will man sich nur
+einen einzlenen Log anzeigen lassen so kann die LogNumber also UUID abgefragt werden.
+
+*Log-Entity:*
+Das Log-Entity ist hat eine UUID den Log eindeutig identifizierbar macht. Mit dieser UUID kann man auch über die API sich ein
+einzelnen Log anzeigen lassen. Des weiteren hat ein Log eine TriggeredBy ObjectId, diese erlaubt es genauer zuspezifizieren, wer oder was der
+Log ausgelöst hat. Das TriggeredBy darf aber auch auf Null gesetzt werden. Mit triggeredAt kann der Zeitpunkt des geschehens festgehalten werden.
+Das Service-Property ist ein Enum, bei dem der Service der logged sich selbst erkennbar macht. Die orderNumber gibt an auf welche Order sich der Log bezieht.
+In der Message kann genau beschrieben werden was festgehalten werden sollte.
+
+image::log_erd.png[Entity-Relationship Diagramm Log]
+
+
+*Log-Dto:*
+Das Log_dto wird gebraucht um das Log entity über RabbitMQ und Rest zu verschicken. Dafür wird es von einem Mapper vom Entity in das Dto und
+umgekehrt umgewandelt.
+
+*Mapper:*
+Der LogMapper wandelt ein Log entity in ein Log Dto und umgekehrt. Zusätzlich gibt es noch den OrderStatusChangedDtoMapper.
+Dieser wandelt die empfangenden OrderStatusChangedDto in Log entities um, die anschliessend in der MongoDB gespeichert werden können.
+
+image::log_and_mappers.png[Entity-Relationship Diagramm Log und Mappers]
+
+*API:*
+
+Über folgenden API Pfad können alle Logs erhalten werden: +
+https://www.g04.swda.hslu-edu.ch/api/log/logs +
+Wenn zusätzlich die UUID eines einzelnen Logs angegeben wird, so erhält man nur die Informationen dieses Logs. +
+https://www.g04.swda.hslu-edu.ch/api/log/logs/9dfe3e05-5fd7-4b86-886f-231ec1c9a29a
+
+*RabbitMQ:*
+Der Exchange des Log-Service ist der fbs.log und ist mit der LogReceiveQ Queue gebunden. Der Log-Service Consumed alles was unter das
+Topic log.* fällt. +
+Eine Ausnahme ist in der Kommunikation mit dem Order-Service, dieser schickt kein LogDto sondern gibt einfach auf der OrderStatusChangedQ
+Queue bekannt das ein Wechselstattgefunden hat. Dieser Erhaltene OrderStatusChangedDto wird anschliessend auf dem Log-Service
+von dem oben beschriebenen Mapper in ein Log-Entity umgewandelt.
+
+*MongoDB:*
+Jeder Service hat seine eigene MongoDB und so auch der Log-Service. Der Log-Service speichert die erhaltenen Log-Entities
+darin ab. Abgefragt wird die MongoDB bei API Abfragen um die gespeicherten Logs anzeigen zu können.
